@@ -370,11 +370,12 @@ def make_gradient_descent_linreg_model(
         X_b_test = np.hstack([np.ones((X_test.shape[0], 1)), X_test])
 
         # Scaling: this is really needed, if you don't believe try comment it out.
-        scaler = StandardScaler()
-        X_b_train = scaler.fit_transform(X_b_train)
-        X_b_test = scaler.transform(X_b_test)
+        x_scaler = StandardScaler()
+        y_scaler = StandardScaler()
+        X_b_train = x_scaler.fit_transform(X_b_train)
+        X_b_test = x_scaler.transform(X_b_test)
         y_train = y_train.reshape(-1, 1)
-        y_train = scaler.fit_transform(y_train).flatten()
+        y_train = y_scaler.fit_transform(y_train).flatten()
 
         # ── Initialization ─────────────────────────────────────────────────────
         w = np.zeros(n_features + 1)  # Weights initialized at 0.
@@ -416,6 +417,8 @@ def make_gradient_descent_linreg_model(
 
         # ── Predictions ──────────────────────────────────────────────────────
         y_pred = X_b_test @ w
+        y_pred = y_pred.reshape(-1, 1)
+        y_pred = y_scaler.inverse_transform(y_pred).flatten()
 
         # ── Update logs ──────────────────────────────────────────────────────
         model_logs["Training Loop"] = training_loop_logs
