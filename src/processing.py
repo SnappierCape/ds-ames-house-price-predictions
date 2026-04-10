@@ -195,13 +195,13 @@ def drop_na_columns(df, threshold=100):
     return df
 
 
-def normalize(array: Union[pd.Series, np.ndarray], min_val: float = 0.0, max_val: float = 1.0) -> Union[pd.Series, np.ndarray]:
+def normalize(array: pd.Series | np.ndarray, min_val: float = 0.0, max_val: float = 1.0) -> pd.Series | np.ndarray:
     """
     Performs Min-Max scaling on an array to transform values into a specific range.
 
     Parameters
     ----------
-    array : pd.Series or np.ndarray
+    array : pd.Series | np.ndarray
         The numeric data to scale.
     min_val : float, default 0.0
         The desired minimum value.
@@ -210,15 +210,15 @@ def normalize(array: Union[pd.Series, np.ndarray], min_val: float = 0.0, max_val
 
     Returns
     -------
-    Union[pd.Series, np.ndarray]
+    normalized_array : pd.Series | np.ndarray
         The scaled data. Note: May result in NaNs if the input array is constant.
     """
     array_range = array.max() - array.min()
-    normalized_range = max - min
+    normalized_range = max_val - min_val
     normalized_array = (
         ((array - array.min()) / array_range)  # Normalize to [0, 1]
         * normalized_range  # Scale to the desired interval
-        + min  # Add min to start from the desired value
+        + min_val  # Add min to start from the desired value
     )
 
     return normalized_array
