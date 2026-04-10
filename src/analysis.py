@@ -18,10 +18,10 @@ from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 
 from .processing import create_freq_table, df_aggregate
+from . import config as conf
 
-RANDOM_SEED = 42
-np.random.seed(RANDOM_SEED)
-rnd.seed(RANDOM_SEED)
+np.random.seed(conf.RANDOM_SEED)
+rnd.seed(conf.RANDOM_SEED)
 
 # -----------------------------------------------------------------------------
 # Functions

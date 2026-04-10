@@ -13,9 +13,10 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-RANDOM_SEED = 42
-np.random.seed(RANDOM_SEED)
-rnd.seed(RANDOM_SEED)
+from . import config as conf
+
+np.random.seed(conf.RANDOM_SEED)
+rnd.seed(conf.RANDOM_SEED)
 
 # -----------------------------------------------------------------------------
 # Function "stratified_kfold_cv()" with helpers.
@@ -237,7 +238,7 @@ def stratified_kfold_cv(
             )
 
         # ── Append model logs if any ─────────────────────────────────────────
-        model_logs[f" Fold: {fold_id + 1}"] = fold_model_logs
+        model_logs[f"Fold: {fold_id + 1}"] = fold_model_logs
 
     # ── 3. Aggregate results ───────────────────────────────────────────────────
     results_df = pd.DataFrame(fold_results)[

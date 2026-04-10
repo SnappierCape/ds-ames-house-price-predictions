@@ -12,9 +12,10 @@ from typing import Any, Union, List, Dict, Optional
 import numpy as np
 import pandas as pd
 
-RANDOM_SEED = 42
-np.random.seed(RANDOM_SEED)
-rnd.seed(RANDOM_SEED)
+from . import config as conf
+
+np.random.seed(conf.RANDOM_SEED)
+rnd.seed(conf.RANDOM_SEED)
 
 # -----------------------------------------------------------------------------
 # Functions
