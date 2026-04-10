@@ -303,6 +303,8 @@ def ols_model(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray) -> t
     None
         Placeholder for consistency with the CV model contract.
     """
+    X_train = np.hstack([np.ones((X_train.shape[0], 1)), X_train])
+    X_test = np.hstack([np.ones((X_test.shape[0], 1)), X_test])
     beta = np.linalg.inv(X_train.T @ X_train) @ (X_train.T @ y_train)
 
     return (X_test @ beta), None
@@ -324,6 +326,8 @@ def make_ridge_model(lambda_: float) -> Callable:
         A model function ready for use in cross-validation.
     """
     def ridge_model(X_train, y_train, X_test):
+        X_train = np.hstack([np.ones((X_train.shape[0], 1)), X_train])
+        X_test = np.hstack([np.ones((X_test.shape[0], 1)), X_test])
         n = X_train.shape[1]
         beta = np.linalg.inv(X_train.T @ X_train + lambda_ * np.eye(n)) @ (
             X_train.T @ y_train
