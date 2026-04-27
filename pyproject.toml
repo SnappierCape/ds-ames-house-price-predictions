@@ -1,5 +1,5 @@
 [project]
-name = "1-ames-iowa-housing"
+name = "ames-house-prices"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"

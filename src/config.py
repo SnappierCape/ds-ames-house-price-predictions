@@ -2,8 +2,6 @@
 # CONFIG FILE - CONSTANTS, PATHS AND SEEDS
 # =============================================================================
 
-import numpy as np
-import random as rnd
 from pathlib import Path
 
 # -----------------------------------------------------------------------------

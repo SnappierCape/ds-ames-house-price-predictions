@@ -330,7 +330,9 @@ def make_ridge_model(lambda_: float) -> Callable:
         X_train = np.hstack([np.ones((X_train.shape[0], 1)), X_train])
         X_test = np.hstack([np.ones((X_test.shape[0], 1)), X_test])
         n = X_train.shape[1]
-        beta = np.linalg.inv(X_train.T @ X_train + lambda_ * np.eye(n)) @ (
+        I = np.eye(n)
+        I[0, 0] = 0.0    # We do not bias the intercept.
+        beta = np.linalg.inv(X_train.T @ X_train + lambda_ * I) @ (
             X_train.T @ y_train
         )
 
@@ -339,7 +341,7 @@ def make_ridge_model(lambda_: float) -> Callable:
     return ridge_model
 
 
-def make_gradient_descent_linreg_model(
+def make_grad_desc_linreg_model(
     alpha: float = 0.001, 
     max_iter: int = 5000, 
     tolerance: float = 1e-6, 
@@ -365,7 +367,7 @@ def make_gradient_descent_linreg_model(
     Callable
         A model function that performs scaling, training, and prediction.
     """
-    def gradient_descent_linreg_model(X_train, y_train, X_test):
+    def grad_desc_linreg_model(X_train, y_train, X_test):
 
         # ── Preparation ────────────────────────────────────────────────────────
         n_samples, n_features = X_train.shape
@@ -430,4 +432,123 @@ def make_gradient_descent_linreg_model(
 
         return y_pred, model_logs
 
-    return gradient_descent_linreg_model
+    return grad_desc_linreg_model
+
+# -----------------------------------------------------------------------------
+# Lasso model with helpers.
+# -----------------------------------------------------------------------------
+
+def _soft_threshold(rho: int, budget: int) -> int:
+    """HELPER
+    Soft thresholding operator for Lasso coordinate descent.
+    If the correlation (rho) is within the penalty budget (budget), it's zeroed out.
+    
+    Parameters
+    ----------
+    rho : int
+        The correlation between the j_th feature and the residuals.
+    budget : int
+        The range under which the coefficient of the j_th feature gets zeroed out.
+        
+    Returns
+    -------
+    new_w : int | 0
+        Either the new shrinked weight or 0.
+    """
+    
+    if rho < -budget:
+        return (rho + budget)
+    elif rho > budget:
+        return(rho - budget)
+    else:
+        return 0
+    
+
+def make_lasso_model(
+    lambda_: float = 1.0,
+    max_iter: int = 2000,
+    tol: float = 1e-05
+) -> Callable:
+    """
+    Factory function that created a Lasso Linear Regression model with
+    Coordinate Descent.
+    
+    Parameters
+    ----------
+    lambda_ : float, default 1.0
+        The L1 penalty factor for Lasso Regression.
+    max_iter : int, default 2000
+        To avoid infinite or excessively long loops.
+    tol : float, default 1e-05
+        To break the loop earlier if convergence is reached.
+        
+    Returns
+    -------
+    lasso_model : Callable
+        The model that respects the stratified_kfold_cv() contract.
+    """
+    def lasso_model(
+        X_train: pd.DataFrame,
+        y_train: pd.DataFrame,
+        X_test: pd.DataFrame
+    ) -> tuple[np.ndarray, dict]:
+        # ── Preparation & Scaling ────────────────────────────────────────────
+        X_train = np.array(X_train)
+        y_train = np.array(y_train)
+        X_test = np.array(X_test)
+        
+        n_samples, n_features = X_train.shape
+        X_mean, X_std = np.mean(X_train, axis=0), np.std(X_train, axis=0)
+        X_std[X_std == 0] = 1    # Handle ZeroDivisionError() for constants.
+        y_mean = np.mean(y_train)
+        
+        X_train = (X_train - X_mean) / X_std
+        X_test = (X_test - X_mean) / X_std
+        
+        # [Center] y to avoid penalizing the intercept.
+        y_centr = y_train - y_mean
+
+        # ── Initalization ────────────────────────────────────────────────────
+        w = np.zeros(n_features)
+        budget = n_samples * lambda_    # Account for sample size.
+        
+        # ── Coordinate Descent loop ──────────────────────────────────────────
+        for iter in range(max_iter):    # Enforces max_iter.
+            w_old = w.copy()    # To check convergence.
+            
+            for j in range(n_features):    # Update one weight at a time.
+                # Find the j_th contribution factor.
+                jth_contrib = X_train[:, j] * w[j]
+                
+                # Calculate the partial residual with no j.
+                y_pred_no_j = X_train @ w - jth_contrib
+                residual_no_j = y_centr - y_pred_no_j
+                
+                # Calculate corr between j_th feature and the partial residual.
+                rho = np.dot(X_train[:, j], residual_no_j)
+                
+                # Update the j_th weight.
+                sum_x_j_sq = np.sum(X_train[:, j]**2)
+                if sum_x_j_sq == 0:
+                    w[j] = 0
+                else:
+                    w[j] = _soft_threshold(rho, budget) / sum_x_j_sq
+            
+            # Check convergence.
+            if np.linalg.norm(w - w_old, ord=1) < tol:
+                break
+            
+        # ── Predictions & Logs ───────────────────────────────────────────
+        y_pred = X_test @ w
+        y_pred = y_pred + y_mean    # Revert the y_centr transformation.
+        
+        model_logs = {
+            'Iter': iter + 1,
+            'Intercept': y_mean,
+            'Weigths': w,
+            'Sparse Features': np.sum(w ==0)
+        }
+            
+        return y_pred, model_logs
+        
+    return lasso_model
